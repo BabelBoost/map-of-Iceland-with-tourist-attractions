@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebook Reader - Babel Boost</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2atBcM69YolTV5wZ5Jd0ZkM6Jp24kQt5QkG4xpc=" crossorigin="" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kPMyx3GlCf6GIuJiGcG8RkXIDbYWMp5WwX+oA=" crossorigin=""></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+@@ -442,100 +444,211 @@
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            color: #999;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .map-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .map-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .map-description {
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .map-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        #icelandMap {
+            width: 100%;
+            height: 520px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e5e7fb;
+        }
+
+        .attraction-list {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 15px;
+            max-height: 520px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+        }
+
+        .attraction-card {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .attraction-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .attraction-card.active {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+        }
+
+        .attraction-card h4 {
+            margin-bottom: 6px;
+        }
+
+        .attraction-card p {
+            color: #f0eaff;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .region-chip {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.8em;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                width: 95%;
+            }
+            
+            .page {
+                padding: 20px;
+                font-size: 0.9em;
+            }
+
+            .book {
+                height: 500px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .upload-options {
+                grid-template-columns: 1fr;
+            }
+
+            .map-layout {
+                grid-template-columns: 1fr;
+            }
+
+            #icelandMap,
+            .attraction-list {
+                max-height: none;
+                height: 380px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Ebook Reader</h1>
+            <p>Babel Boost - Your Digital Library</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('library')">📖 Library</button>
+            <button class="tab-btn" onclick="showTab('admin')">➕ Add Ebook</button>
+            <button class="tab-btn active" data-target="library" onclick="showTab('library')">📖 Library</button>
+            <button class="tab-btn" data-target="map" onclick="showTab('map')">🗺️ Iceland Map</button>
+            <button class="tab-btn" data-target="admin" onclick="showTab('admin')">➕ Add Ebook</button>
+        </div>
+
+        <!-- LIBRARY -->
+        <div class="section active" id="librarySection">
+        <div class="section active" id="librarySection" data-tab="library">
+            <div class="book-selector">
+                <h2>Your ebooks:</h2>
+                <div class="book-grid" id="bookGrid"></div>
+            </div>
+        </div>
+
+        <!-- MAP SECTION -->
+        <div class="section" id="mapSection" data-tab="map">
+            <div class="map-panel">
+                <div class="map-header">
+                    <span style="font-size: 1.4em;">🧭</span>
+                    <div>
+                        <h2>Mapa Islandii</h2>
+                        <p class="map-description">Odkrywaj najciekawsze miejsca wyspy, klikaj pinezki na mapie i planuj kolejne przystanki.</p>
+                    </div>
+                </div>
+                <div class="map-layout">
+                    <div id="icelandMap" aria-label="Mapa Islandii"></div>
+                    <div class="attraction-list" id="attractionList" aria-label="Lista atrakcji"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD EBOOK PANEL -->
+        <div class="section" id="adminSection">
+        <div class="section" id="adminSection" data-tab="admin">
+            <div class="admin-panel">
+                <div class="success-message" id="successMessage">
+                    ✓ Ebook successfully added!
+                </div>
+                <div class="loading-message" id="loadingMessage">
+                    ⏳ Processing PDF... Please wait...
+                </div>
+
+                <h2>Add New Ebook</h2>
+
+                <div class="upload-options">
+                    <div class="upload-card" onclick="document.getElementById('pdfFile').click()">
+                        <h3>📄 Upload PDF</h3>
+                        <p>Import complete PDF file</p>
+                        <p style="margin-top: 10px; font-size: 0.85em; color: #999;">Automatically extracts text from PDF</p>
+                    </div>
+                    <div class="upload-card" onclick="showManualEntry()">
+                        <h3>✍️ Manual Entry</h3>
+                        <p>Add chapters manually</p>
+                        <p style="margin-top: 10px; font-size: 0.85em; color: #999;">Type or paste content</p>
+                    </div>
+                </div>
+
+                <input type="file" id="pdfFile" accept=".pdf" onchange="importPdfFile()" style="display: none;">
+                
+@@ -597,50 +710,131 @@
+            <div class="book-viewer">
+                <div class="book">
+                    <div class="page-container">
+                        <div class="page left" id="leftPage"></div>
+                        <div class="page right" id="rightPage"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="prevBtn" onclick="prevPage()">← Previous</button>
+                <span class="page-info" id="pageInfo">Page 1-2</span>
+                <button class="btn" id="nextBtn" onclick="nextPage()">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let books = [];
+        let currentBook = null;
+        let currentPageIndex = 0;
+        let tempChapters = [];
+        let map = null;
+        let attractionMarkers = [];
+
+        const attractions = [
+            { name: 'Reykjavík', coords: [64.1466, -21.9426], region: 'Stolica', description: 'Kolorowe murale, klimatyczne kawiarnie i widok z Perlan.' },
+            { name: 'Złoty Krąg - Thingvellir', coords: [64.2550, -21.1290], region: 'Złoty Krąg', description: 'Rozłam tektoniczny i miejsce najstarszego parlamentu świata.' },
+            { name: 'Geysir i Strokkur', coords: [64.3104, -20.3024], region: 'Złoty Krąg', description: 'Pole geotermalne z regularnie wybuchającym gejzerem Strokkur.' },
+            { name: 'Gullfoss', coords: [64.3275, -20.1218], region: 'Złoty Krąg', description: 'Dwupoziomowy wodospad o potężnej sile i tęczach w słoneczne dni.' },
+            { name: 'Laguna Lodowcowa Jökulsárlón', coords: [64.0481, -16.1796], region: 'Południowe wybrzeże', description: 'Dryfujące góry lodowe i czarne plaże pełne kryształowych brył.' },
+            { name: 'Wodospad Skógafoss', coords: [63.5321, -19.5119], region: 'Południowe wybrzeże', description: 'Zjawiskowy 60-metrowy wodospad z tęczą przy słonecznej pogodzie.' },
+            { name: 'Kirkjufell', coords: [64.9394, -23.3075], region: 'Półwysep Snæfellsnes', description: 'Słynna stożkowa góra znana z pocztówek i serii „Gra o tron”.' },
+            { name: 'Myvatn i okolice', coords: [65.6050, -17.0008], region: 'Północ', description: 'Pole lawowe Dimmuborgir, kratery i kąpiele geotermalne Mývatn.' },
+            { name: 'Laguna Błękitna', coords: [63.8804, -22.4495], region: 'Reykjanes', description: 'Najbardziej znane spa geotermalne z mleczno-niebieską wodą.' },
+            { name: 'Wodospad Dettifoss', coords: [65.8147, -16.3840], region: 'Północ', description: 'Najpotężniejszy wodospad Europy pod względem przepływu wody.' }
+        ];
+
+        function initMap() {
+            const mapElement = document.getElementById('icelandMap');
+            if (!mapElement) return;
+
+            map = L.map(mapElement, {
+                scrollWheelZoom: true,
+                attributionControl: false
+            }).setView([64.9631, -19.0208], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                minZoom: 4
+            }).addTo(map);
+
+            attractionMarkers = attractions.map((spot, index) => {
+                const marker = L.marker(spot.coords)
+                    .addTo(map)
+                    .bindPopup(`<strong>${spot.name}</strong><br>${spot.description}`);
+
+                marker.on('click', () => highlightAttraction(index));
+                return marker;
+            });
+
+            renderAttractionList();
+        }
+
+        function renderAttractionList() {
+            const list = document.getElementById('attractionList');
+            if (!list) return;
+
+            list.innerHTML = '';
+
+            attractions.forEach((spot, index) => {
+                const card = document.createElement('div');
+                card.className = 'attraction-card';
+                card.innerHTML = `
+                    <h4>${spot.name}</h4>
+                    <p>${spot.description}</p>
+                    <span class="region-chip">${spot.region}</span>
+                `;
+                card.onclick = () => focusAttraction(index);
+                card.dataset.index = index;
+                list.appendChild(card);
+            });
+        }
+
+        function focusAttraction(index) {
+            const spot = attractions[index];
+            if (!spot || !map) return;
+
+            map.setView(spot.coords, 8);
+            attractionMarkers[index]?.openPopup();
+            highlightAttraction(index);
+        }
+
+        function highlightAttraction(index) {
+            const cards = document.querySelectorAll('.attraction-card');
+            cards.forEach(card => card.classList.remove('active'));
+
+            const card = document.querySelector(`.attraction-card[data-index="${index}"]`);
+            if (card) {
+                card.classList.add('active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Load books from storage
+        function loadBooks() {
+            const stored = localStorage.getItem('ebookLibrary');
+            if (stored) {
+                books = JSON.parse(stored);
+            } else {
+                books = [{
+                    id: Date.now(),
+                    title: "Sample Ebook",
+                    author: "Babel Boost",
+                    type: "manual",
+                    pages: [
+                        { title: "Welcome!", content: "This is a sample ebook. You can delete it and add your own content using the 'Add Ebook' tab.\n\nClick there to add your own ebooks!" },
+                        { title: "Instructions", content: "1. Go to 'Add Ebook' tab\n2. Upload a PDF or enter manually\n3. For manual: Enter title and author\n4. Add chapters (manually or import from .txt)\n5. Click 'Save ebook'\n6. Return to library and read!" }
+                    ]
+                }];
+                saveToStorage();
+            }
+        }
+
+        // Save books to storage
+        function saveToStorage() {
+            localStorage.setItem('ebookLibrary', JSON.stringify(books));
+        }
+@@ -916,52 +1110,51 @@
+                    currentPageIndex += 2;
+                    displayPages();
+                    rightPage.classList.remove('flipping-left');
+                }, 600);
+            }
+        }
+
+        // Previous page
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                const leftPage = document.getElementById('leftPage');
+                leftPage.classList.add('flipping-right');
+                
+                setTimeout(() => {
+                    currentPageIndex -= 2;
+                    displayPages();
+                    leftPage.classList.remove('flipping-right');
+                }, 600);
+            }
+        }
+
+        // Switch tabs
+        function showTab(tab) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const sections = document.querySelectorAll('.section');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            sections.forEach(s => s.classList.remove('active'));
+            
+            if (tab === 'library') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('librarySection').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('adminSection').classList.add('active');
+
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.target === tab));
+            sections.forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+
+            if (tab === 'map' && map) {
+                setTimeout(() => map.invalidateSize(), 150);
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (!currentBook) return;
+            
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') prevPage();
+        });
+
+        // Initialize
+        loadBooks();
+        displayLibrary();
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadBooks();
+            displayLibrary();
+        });
+    </script>
+</body>
+</html>
